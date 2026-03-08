@@ -26,14 +26,18 @@ services:
   # All download services route through this container for VPN protection
   # Documentation: https://github.com/qdm12/gluetun
   # AirVPN setup: https://github.com/qdm12/gluetun-wiki/blob/main/setup/providers/airvpn.md
+  # Rootless Podman: Requires privileged mode for TUN device access
   # ===========================================================================
   gluetun:
     image: qmcgaw/gluetun:latest
     container_name: gluetun
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
+    # For rootless Podman: privileged mode is required for TUN device access
+    # For Docker: can use cap_add + devices instead (more secure)
+    privileged: true
+    # cap_add:
+    #   - NET_ADMIN
+    # devices:
+    #   - /dev/net/tun:/dev/net/tun
     environment:
       <<: *lsio-environment
       VPN_SERVICE_PROVIDER: airvpn
