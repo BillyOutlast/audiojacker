@@ -71,10 +71,10 @@ nano .env
 
 ```bash
 # Set ownership (replace with your PUID:PGID)
-sudo chown -R 1000:1000 /mnt/fast-block/audiojacker
+sudo chown -R 1000:1000 ./audiojacker
 
 # Set permissions
-sudo chmod -R 755 /mnt/fast-block/audiojacker
+sudo chmod -R 755 ./audiojacker
 ```
 
 ### 5. Start the Stack
