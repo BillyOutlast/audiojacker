@@ -40,11 +40,11 @@ A comprehensive Docker Compose setup for automated media downloading and streami
 
 ```bash
 # Create the base directory
-sudo mkdir -p /mnt/fast-block/audiojacker/{downloads,audiobooks,music,config}
+sudo mkdir -p ./audiojacker/{downloads,audiobooks,music,config}
 
 # Create subdirectories
-sudo mkdir -p /mnt/fast-block/audiojacker/downloads/{torrents,soulseek,youtube,torbox,complete}
-sudo mkdir -p /mnt/fast-block/audiojacker/music/{incoming,library}
+sudo mkdir -p ./audiojacker/downloads/{torrents,soulseek,youtube,torbox,complete}
+sudo mkdir -p ./audiojacker/music/{incoming,library}
 ```
 
 ### 3. Configure Environment
@@ -105,7 +105,7 @@ docker-compose logs -f
 ## 📁 Directory Structure
 
 ```
-/mnt/fast-block/audiojacker/
+./audiojacker/
 ├── downloads/
 │   ├── torrents/          # qBittorrent downloads
 │   ├── soulseek/          # slskd downloads
