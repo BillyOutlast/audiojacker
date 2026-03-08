@@ -99,9 +99,9 @@ services:
     image: linuxserver/qbittorrent:latest
     container_name: qbittorrent
     network_mode: service:gluetun
-    depends_on:
-      gluetun:
-        condition: service_healthy
+    #depends_on:
+    #  gluetun:
+    #    condition: service_healthy
     environment:
       <<: *lsio-environment
       WEBUI_PORT: 8080
@@ -123,9 +123,9 @@ services:
     image: linuxserver/lidarr:latest
     container_name: lidarr
     network_mode: service:gluetun
-    depends_on:
-      gluetun:
-        condition: service_healthy
+    #depends_on:
+    #  gluetun:
+    #    condition: service_healthy
     environment:
       <<: *lsio-environment
     volumes:
@@ -145,9 +145,9 @@ services:
     image: slskd/slskd:latest
     container_name: slskd
     network_mode: service:gluetun
-    depends_on:
-      gluetun:
-        condition: service_healthy
+    #depends_on:
+    #  gluetun:
+    #    condition: service_healthy
     environment:
       <<: *lsio-environment
       SLSKD_SLSK_USERNAME: ${SOULSEEK_USER}
