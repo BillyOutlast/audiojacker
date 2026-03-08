@@ -34,10 +34,10 @@ services:
     # For rootless Podman: privileged mode is required for TUN device access
     # For Docker: can use cap_add + devices instead (more secure)
     privileged: true
-    # cap_add:
-    #   - NET_ADMIN
-    # devices:
-    #   - /dev/net/tun:/dev/net/tun
+    cap_add:
+       - NET_ADMIN
+    devices:
+     - /dev/net/tun:/dev/net/tun
     environment:
       <<: *lsio-environment
       VPN_SERVICE_PROVIDER: airvpn
@@ -262,6 +262,7 @@ services:
   # Web UI accessible at http://localhost:8000
   # Default credentials: admin@koel.dev / KoelIsCool (change on first login)
   # Documentation: https://github.com/koel/koel
+  # Note: Requires .env file - run init container first or mount config
   # ===========================================================================
   koel:
     image: phanan/koel:latest
@@ -274,11 +275,15 @@ services:
       ADMIN_PASSWORD: ${KOEL_ADMIN_PASS:-KoelIsCool}
       # Optional: For streaming optimization
       STREAMING_METHOD: php
+      # Required for Koel to generate .env on first run
+      APP_KEY: ${KOEL_APP_KEY:-base64:your32characterbase64keyhere==}
+      APP_URL: ${KOEL_APP_URL:-http://localhost:8000}
     ports:
       - ${KOEL_PORT:-8000}:80
     volumes:
       - ${BASE_PATH}/music:/music
       - ${BASE_PATH}/config/koel:/data
+      - ${BASE_PATH}/config/koel/.env:/var/www/html/.env
       - ${BASE_PATH}/config/koel/covers:/var/www/html/public/img/covers
     restart: unless-stopped
     networks:
