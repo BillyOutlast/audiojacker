@@ -256,7 +256,7 @@ services:
   # Documentation: https://github.com/koel/koel
   # ===========================================================================
   koel:
-    image: koel/koel:latest
+    image: phanan/koel:latest
     container_name: koel
     environment:
       <<: *lsio-environment
