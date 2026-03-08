@@ -48,7 +48,8 @@ services:
       - ${BASE_PATH}/config/gluetun:/gluetun
     ports:
       # qBittorrent Web UI (routed through VPN)
-      - ${QBITTORRENT_PORT:-8080}:8080
+      # Changed default from 8080 to 8090 to avoid port conflict
+      - ${QBITTORRENT_PORT:-8090}:8080
       # Lidarr Web UI (routed through VPN)
       - ${LIDARR_PORT:-8686}:8686
       # slskd Web UI (routed through VPN)
@@ -60,10 +61,10 @@ services:
       - 22399:22399/udp
       - 22400:22400/tcp
       - 22400:22400/udp
-      # soularr Web UI (routed through VPN)
-      - ${SOULARR_PORT:-8400}:8400
-      # yubal Web UI (routed through VPN)
-      - ${YUBAL_PORT:-8888}:8888
+      # soularr Web UI (routed through VPN) - DISABLED: image not publicly available
+      # - ${SOULARR_PORT:-8400}:8400
+      # yubal Web UI (routed through VPN) - DISABLED: image not publicly available
+      # - ${YUBAL_PORT:-8888}:8888
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "https://ipinfo.io"]
@@ -77,7 +78,7 @@ services:
   # ===========================================================================
   # TORRENT CLIENT - qBittorrent
   # ===========================================================================
-  # Web UI accessible at http://localhost:8080
+  # Web UI accessible at http://localhost:8090
   # Default credentials: admin / adminadmin (change on first login)
   # Documentation: https://hub.docker.com/r/linuxserver/qbittorrent
   # ===========================================================================
@@ -149,75 +150,82 @@ services:
   # ===========================================================================
   # LIDARR + SOULSEEK INTEGRATION - soularr
   # ===========================================================================
-  # Connects Lidarr with Soulseek for automated music downloading
-  # Documentation: https://github.com/guillevc/yubal
-  # Note: soularr may need to be built from source or use alternative image
+  # DISABLED: The image ghcr.io/guillevc/soularr:latest is not publicly accessible
+  # (403 Forbidden). You may need to:
+  # 1. Build from source: https://github.com/guillevc/soularr
+  # 2. Request access to the container registry
+  # 3. Use an alternative image if available
   # ===========================================================================
-  soularr:
-    image: ghcr.io/guillevc/soularr:latest
-    container_name: soularr
-    network_mode: service:gluetun
-    depends_on:
-      gluetun:
-        condition: service_healthy
-      lidarr:
-        condition: service_started
-      slskd:
-        condition: service_started
-    environment:
-      <<: *lsio-environment
-      LIDARR_URL: http://localhost:8686
-      LIDARR_API_KEY: ${LIDARR_API_KEY}
-      SLSKD_URL: http://localhost:5000
-      SLSKD_API_KEY: ${SLSKD_API_KEY:-}
-    volumes:
-      - ${BASE_PATH}/config/soularr:/config
-      - ${BASE_PATH}/downloads/soulseek:/downloads
-      - ${BASE_PATH}/music:/music
-    restart: unless-stopped
+  # soularr:
+  #   image: ghcr.io/guillevc/soularr:latest
+  #   container_name: soularr
+  #   network_mode: service:gluetun
+  #   depends_on:
+  #     gluetun:
+  #       condition: service_healthy
+  #     lidarr:
+  #       condition: service_started
+  #     slskd:
+  #       condition: service_started
+  #   environment:
+  #     <<: *lsio-environment
+  #     LIDARR_URL: http://localhost:8686
+  #     LIDARR_API_KEY: ${LIDARR_API_KEY}
+  #     SLSKD_URL: http://localhost:5000
+  #     SLSKD_API_KEY: ${SLSKD_API_KEY:-}
+  #   volumes:
+  #     - ${BASE_PATH}/config/soularr:/config
+  #     - ${BASE_PATH}/downloads/soulseek:/downloads
+  #     - ${BASE_PATH}/music:/music
+  #   restart: unless-stopped
 
   # ===========================================================================
   # YOUTUBE AUDIO DOWNLOADER - yubal
   # ===========================================================================
-  # Web UI accessible at http://localhost:8888
-  # Documentation: https://github.com/guillevc/yubal
+  # DISABLED: The image ghcr.io/guillevc/yubal:latest is not publicly accessible
+  # (403 Forbidden). You may need to:
+  # 1. Build from source: https://github.com/guillevc/yubal
+  # 2. Request access to the container registry
+  # 3. Use an alternative image if available
   # ===========================================================================
-  yubal:
-    image: ghcr.io/guillevc/yubal:latest
-    container_name: yubal
-    network_mode: service:gluetun
-    depends_on:
-      gluetun:
-        condition: service_healthy
-    environment:
-      <<: *lsio-environment
-    volumes:
-      - ${BASE_PATH}/config/yubal:/config
-      - ${BASE_PATH}/downloads/youtube:/downloads
-      - ${BASE_PATH}/music:/music
-    restart: unless-stopped
+  # yubal:
+  #   image: ghcr.io/guillevc/yubal:latest
+  #   container_name: yubal
+  #   network_mode: service:gluetun
+  #   depends_on:
+  #     gluetun:
+  #       condition: service_healthy
+  #   environment:
+  #     <<: *lsio-environment
+  #   volumes:
+  #     - ${BASE_PATH}/config/yubal:/config
+  #     - ${BASE_PATH}/downloads/youtube:/downloads
+  #     - ${BASE_PATH}/music:/music
+  #   restart: unless-stopped
 
   # ===========================================================================
   # TORBOX AUTO DOWNLOADER
   # ===========================================================================
-  # Automated downloading from Torbox service
-  # Documentation: https://github.com/MrJoiny/torbox-auto-downloader
+  # DISABLED: The image ghcr.io/mrjoiny/torbox-auto-downloader:latest is not 
+  # publicly accessible (403 Forbidden). You may need to:
+  # 1. Build from source: https://github.com/MrJoiny/torbox-auto-downloader
+  # 2. Request access to the container registry
+  # 3. Use an alternative image if available
   # ===========================================================================
-  torbox-auto-downloader:
-    image: ghcr.io/mrjoiny/torbox-auto-downloader:latest
-    container_name: torbox-auto-downloader
-    network_mode: service:gluetun
-    depends_on:
-      gluetun:
-        condition: service_healthy
-    environment:
-      <<: *lsio-environment
-      TORBOX_API_KEY: ${TORBOX_API_KEY}
-      # Add additional Torbox configuration as needed
-    volumes:
-      - ${BASE_PATH}/config/torbox:/config
-      - ${BASE_PATH}/downloads/torbox:/downloads
-    restart: unless-stopped
+  # torbox-auto-downloader:
+  #   image: ghcr.io/mrjoiny/torbox-auto-downloader:latest
+  #   container_name: torbox-auto-downloader
+  #   network_mode: service:gluetun
+  #   depends_on:
+  #     gluetun:
+  #       condition: service_healthy
+  #   environment:
+  #     <<: *lsio-environment
+  #     TORBOX_API_KEY: ${TORBOX_API_KEY}
+  #   volumes:
+  #     - ${BASE_PATH}/config/torbox:/config
+  #     - ${BASE_PATH}/downloads/torbox:/downloads
+  #   restart: unless-stopped
 
   # ===========================================================================
   # AUDIOBOOK SERVER - audiobookshelf
