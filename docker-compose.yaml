@@ -25,6 +25,7 @@ services:
   # ===========================================================================
   # All download services route through this container for VPN protection
   # Documentation: https://github.com/qdm12/gluetun
+  # AirVPN setup: https://github.com/qdm12/gluetun-wiki/blob/main/setup/providers/airvpn.md
   # ===========================================================================
   gluetun:
     image: qmcgaw/gluetun:latest
@@ -35,15 +36,18 @@ services:
       - /dev/net/tun:/dev/net/tun
     environment:
       <<: *lsio-environment
-      VPN_SERVICE_PROVIDER: protonvpn
-      VPN_TYPE: openvpn
-      OPENVPN_USER: ${PROTONVPN_USER}
-      OPENVPN_PASSWORD: ${PROTONVPN_PASSWORD}
-      SERVER_COUNTRIES: ${PROTONVPN_SERVERS:-Netherlands}
-      # Optional: Add more ProtonVPN options
-      # SERVER_CITIES: Amsterdam
-      # VPN_ENDPOINT_IP: 
-      # VPN_ENDPOINT_PORT: 
+      VPN_SERVICE_PROVIDER: airvpn
+      VPN_TYPE: wireguard
+      # AirVPN WireGuard configuration
+      # Generate config at https://airvpn.org/generator/
+      WIREGUARD_PRIVATE_KEY: ${AIRVPN_WG_PRIVATE_KEY}
+      WIREGUARD_PRESHARED_KEY: ${AIRVPN_WG_PRESHARED_KEY:-}
+      WIREGUARD_PUBLIC_KEY: ${AIRVPN_WG_PUBLIC_KEY}
+      WIREGUARD_ADDRESSES: ${AIRVPN_WG_ADDRESSES}
+      # Server selection (use SERVER_COUNTRIES, SERVER_CITIES, or SERVER_NAMES)
+      SERVER_COUNTRIES: ${AIRVPN_SERVERS:-Netherlands}
+      # Optional: Specify server names directly
+      # SERVER_NAMES: servername1,servername2
     volumes:
       - ${BASE_PATH}/config/gluetun:/gluetun
     ports:
