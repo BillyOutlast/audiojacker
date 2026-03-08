@@ -45,13 +45,15 @@ services:
       VPN_TYPE: wireguard
       # AirVPN WireGuard configuration
       # Generate config at https://airvpn.org/generator/
+      # IMPORTANT: When using manual WireGuard keys, you MUST also set the endpoint
+      # OR remove all WIREGUARD_* variables and let gluetun auto-configure
       WIREGUARD_PRIVATE_KEY: ${AIRVPN_WG_PRIVATE_KEY}
       WIREGUARD_PRESHARED_KEY: ${AIRVPN_WG_PRESHARED_KEY:-}
-      WIREGUARD_PUBLIC_KEY: ${AIRVPN_WG_PUBLIC_KEY}
       WIREGUARD_ADDRESSES: ${AIRVPN_WG_ADDRESSES}
-      # Server selection (use SERVER_COUNTRIES, SERVER_CITIES, or SERVER_NAMES)
+      # Server selection - gluetun will auto-select from these countries
+      # The server public key is automatically managed by gluetun
       SERVER_COUNTRIES: ${AIRVPN_SERVERS:-Netherlands}
-      # Optional: Specify server names directly
+      # Optional: Specify exact server name if you want to use a specific server
       # SERVER_NAMES: servername1,servername2
     volumes:
       - ${BASE_PATH}/config/gluetun:/gluetun
