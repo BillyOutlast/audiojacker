@@ -29,37 +29,37 @@ flowchart TB
         torbox_api[Torbox API]
         youtube[YouTube]
     end
-    
+
     subgraph Docker[Docker Network: media_net]
         subgraph VPN_Routed[VPN-Routed via gluetun]
-            gluetun[gluetun<br/>VPN Gateway]
-            qbittorrent[qBittorrent<br/>:8080]
-            lidarr[Lidarr<br/>:8686]
-            slskd[slskd<br/>:5000]
-            soularr[soularr<br/>:8400]
-            yubal[yubal<br/>:8888]
+            gluetun[gluetun VPN Gateway]
+            qbittorrent[qBittorrent :8080]
+            lidarr[Lidarr :8686]
+            slskd[slskd :5000]
+            soularr[soularr :8400]
+            yubal[yubal :8888]
             torbox[torbox-auto-downloader]
         end
-        
+
         subgraph Direct_Access[Direct Access]
-            audiobookshelf[audiobookshelf<br/>:13378]
-            koel[koel<br/>:8000]
+            audiobookshelf[audiobookshelf :13378]
+            koel[koel :8000]
         end
     end
-    
+
     subgraph Storage[Shared Volumes]
-        downloads[/downloads<br/>Torrent/Stlsk Downloads]
-        audiobooks[/audiobooks<br/>Audiobook Library]
-        music[/music<br/>Music Library]
-        config[/config<br/>Service Configs]
+        downloads[downloads - Torrent and Soulseek Downloads]
+        audiobooks[audiobooks - Audiobook Library]
+        music[music - Music Library]
+        config[config - Service Configs]
     end
-    
+
     gluetun -->|VPN Tunnel| vpn_servers
     qbittorrent -->|via gluetun| trackers
     slskd -->|via gluetun| soulseek
     torbox -->|via gluetun| torbox_api
     yubal -->|via gluetun| youtube
-    
+
     qbittorrent --> downloads
     slskd --> downloads
     lidarr --> music
