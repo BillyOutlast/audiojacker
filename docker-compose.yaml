@@ -1,0 +1,292 @@
+version: "3.9"
+
+# =============================================================================
+# Audiojacker - All-in-One Media Download and Streaming Stack
+# =============================================================================
+# This compose file sets up a complete media management system with:
+# - VPN-routed download services (via gluetun)
+# - Direct-access media servers
+# =============================================================================
+
+# Shared environment variables for linuxserver.io containers
+x-lsio-environment: &lsio-environment
+  PUID: ${PUID:-1000}
+  PGID: ${PGID:-1000}
+  TZ: ${TZ:-America/New_York}
+
+# Common volume mounts for download services
+x-download-volumes: &download-volumes
+  - ${BASE_PATH}/downloads:/downloads
+  - ${BASE_PATH}/config:/config
+
+services:
+  # ===========================================================================
+  # VPN GATEWAY - gluetun
+  # ===========================================================================
+  # All download services route through this container for VPN protection
+  # Documentation: https://github.com/qdm12/gluetun
+  # ===========================================================================
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      <<: *lsio-environment
+      VPN_SERVICE_PROVIDER: protonvpn
+      VPN_TYPE: openvpn
+      OPENVPN_USER: ${PROTONVPN_USER}
+      OPENVPN_PASSWORD: ${PROTONVPN_PASSWORD}
+      SERVER_COUNTRIES: ${PROTONVPN_SERVERS:-Netherlands}
+      # Optional: Add more ProtonVPN options
+      # SERVER_CITIES: Amsterdam
+      # VPN_ENDPOINT_IP: 
+      # VPN_ENDPOINT_PORT: 
+    volumes:
+      - ${BASE_PATH}/config/gluetun:/gluetun
+    ports:
+      # qBittorrent Web UI (routed through VPN)
+      - ${QBITTORRENT_PORT:-8080}:8080
+      # Lidarr Web UI (routed through VPN)
+      - ${LIDARR_PORT:-8686}:8686
+      # slskd Web UI (routed through VPN)
+      - ${SLSKD_PORT:-5000}:5000
+      # slskd listen ports for Soulseek network
+      - 22398:22398/tcp
+      - 22398:22398/udp
+      - 22399:22399/tcp
+      - 22399:22399/udp
+      - 22400:22400/tcp
+      - 22400:22400/udp
+      # soularr Web UI (routed through VPN)
+      - ${SOULARR_PORT:-8400}:8400
+      # yubal Web UI (routed through VPN)
+      - ${YUBAL_PORT:-8888}:8888
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "https://ipinfo.io"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - media_net
+
+  # ===========================================================================
+  # TORRENT CLIENT - qBittorrent
+  # ===========================================================================
+  # Web UI accessible at http://localhost:8080
+  # Default credentials: admin / adminadmin (change on first login)
+  # Documentation: https://hub.docker.com/r/linuxserver/qbittorrent
+  # ===========================================================================
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      <<: *lsio-environment
+      WEBUI_PORT: 8080
+      TORRENTING_PORT: 6881
+    volumes:
+      - ${BASE_PATH}/config/qbittorrent:/config
+      - ${BASE_PATH}/downloads/torrents:/downloads
+    restart: unless-stopped
+
+  # ===========================================================================
+  # MUSIC COLLECTION MANAGER - Lidarr
+  # ===========================================================================
+  # Web UI accessible at http://localhost:8686
+  # Documentation: https://lidarr.audio/
+  # ===========================================================================
+  lidarr:
+    image: linuxserver/lidarr:latest
+    container_name: lidarr
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      <<: *lsio-environment
+    volumes:
+      - ${BASE_PATH}/config/lidarr:/config
+      - ${BASE_PATH}/music:/music
+      - ${BASE_PATH}/downloads:/downloads
+    restart: unless-stopped
+
+  # ===========================================================================
+  # SOULSEEK CLIENT - slskd
+  # ===========================================================================
+  # Web UI accessible at http://localhost:5000
+  # Documentation: https://github.com/slskd/slskd
+  # ===========================================================================
+  slskd:
+    image: slskd/slskd:latest
+    container_name: slskd
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      <<: *lsio-environment
+      SLSKD_SLSK_USERNAME: ${SOULSEEK_USER}
+      SLSKD_SLSK_PASSWORD: ${SOULSEEK_PASS}
+      SLSKD_SLSK_LISTEN_PORT: 22398
+      SLSKD_REMOTE_CONFIGURATION: true
+      SLSKD_NO_AUTH: false
+      SLSKD_USERNAME: ${SLSKD_ADMIN_USER:-admin}
+      SLSKD_PASSWORD: ${SLSKD_ADMIN_PASS:-admin}
+    volumes:
+      - ${BASE_PATH}/config/slskd:/app/data
+      - ${BASE_PATH}/downloads/soulseek:/downloads
+      - ${BASE_PATH}/music:/music
+    restart: unless-stopped
+
+  # ===========================================================================
+  # LIDARR + SOULSEEK INTEGRATION - soularr
+  # ===========================================================================
+  # Connects Lidarr with Soulseek for automated music downloading
+  # Documentation: https://github.com/guillevc/yubal
+  # Note: soularr may need to be built from source or use alternative image
+  # ===========================================================================
+  soularr:
+    image: ghcr.io/guillevc/soularr:latest
+    container_name: soularr
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+      lidarr:
+        condition: service_started
+      slskd:
+        condition: service_started
+    environment:
+      <<: *lsio-environment
+      LIDARR_URL: http://localhost:8686
+      LIDARR_API_KEY: ${LIDARR_API_KEY}
+      SLSKD_URL: http://localhost:5000
+      SLSKD_API_KEY: ${SLSKD_API_KEY:-}
+    volumes:
+      - ${BASE_PATH}/config/soularr:/config
+      - ${BASE_PATH}/downloads/soulseek:/downloads
+      - ${BASE_PATH}/music:/music
+    restart: unless-stopped
+
+  # ===========================================================================
+  # YOUTUBE AUDIO DOWNLOADER - yubal
+  # ===========================================================================
+  # Web UI accessible at http://localhost:8888
+  # Documentation: https://github.com/guillevc/yubal
+  # ===========================================================================
+  yubal:
+    image: ghcr.io/guillevc/yubal:latest
+    container_name: yubal
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      <<: *lsio-environment
+    volumes:
+      - ${BASE_PATH}/config/yubal:/config
+      - ${BASE_PATH}/downloads/youtube:/downloads
+      - ${BASE_PATH}/music:/music
+    restart: unless-stopped
+
+  # ===========================================================================
+  # TORBOX AUTO DOWNLOADER
+  # ===========================================================================
+  # Automated downloading from Torbox service
+  # Documentation: https://github.com/MrJoiny/torbox-auto-downloader
+  # ===========================================================================
+  torbox-auto-downloader:
+    image: ghcr.io/mrjoiny/torbox-auto-downloader:latest
+    container_name: torbox-auto-downloader
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      <<: *lsio-environment
+      TORBOX_API_KEY: ${TORBOX_API_KEY}
+      # Add additional Torbox configuration as needed
+    volumes:
+      - ${BASE_PATH}/config/torbox:/config
+      - ${BASE_PATH}/downloads/torbox:/downloads
+    restart: unless-stopped
+
+  # ===========================================================================
+  # AUDIOBOOK SERVER - audiobookshelf
+  # ===========================================================================
+  # Web UI accessible at http://localhost:13378
+  # Documentation: https://github.com/advplyr/audiobookshelf
+  # ===========================================================================
+  audiobookshelf:
+    image: advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    environment:
+      <<: *lsio-environment
+    ports:
+      - ${AUDIOBOOKSHELF_PORT:-13378}:80
+    volumes:
+      - ${BASE_PATH}/audiobooks:/audiobooks
+      - ${BASE_PATH}/config/audiobookshelf:/config
+      - ${BASE_PATH}/config/audiobookshelf/metadata:/metadata
+    restart: unless-stopped
+    networks:
+      - media_net
+
+  # ===========================================================================
+  # MUSIC STREAMING SERVER - koel
+  # ===========================================================================
+  # Web UI accessible at http://localhost:8000
+  # Default credentials: admin@koel.dev / KoelIsCool (change on first login)
+  # Documentation: https://github.com/koel/koel
+  # ===========================================================================
+  koel:
+    image: koel/koel:latest
+    container_name: koel
+    environment:
+      <<: *lsio-environment
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /data/koel.db
+      ADMIN_EMAIL: ${KOEL_ADMIN_EMAIL:-admin@koel.dev}
+      ADMIN_PASSWORD: ${KOEL_ADMIN_PASS:-KoelIsCool}
+      # Optional: For streaming optimization
+      STREAMING_METHOD: php
+    ports:
+      - ${KOEL_PORT:-8000}:80
+    volumes:
+      - ${BASE_PATH}/music:/music
+      - ${BASE_PATH}/config/koel:/data
+      - ${BASE_PATH}/config/koel/covers:/var/www/html/public/img/covers
+    restart: unless-stopped
+    networks:
+      - media_net
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  media_net:
+    driver: bridge
+    name: media_net
+
+# =============================================================================
+# VOLUMES (optional - for persistent data if preferred over bind mounts)
+# =============================================================================
+# volumes:
+#   gluetun_data:
+#   qbittorrent_config:
+#   lidarr_config:
+#   slskd_data:
+#   soularr_config:
+#   yubal_config:
+#   torbox_config:
+#   audiobookshelf_config:
+#   audiobookshelf_metadata:
+#   koel_data:
