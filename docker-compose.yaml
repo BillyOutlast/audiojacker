@@ -35,7 +35,8 @@ services:
     # For Docker: can use cap_add + devices instead (more secure)
     privileged: true
     cap_add:
-       - NET_ADMIN
+      - NET_ADMIN
+      - NET_RAW
     devices:
      - /dev/net/tun:/dev/net/tun
     environment:
@@ -82,6 +83,8 @@ services:
       start_period: 30s
     networks:
       - media_net
+    security_opt:
+      - "label=disable"
 
   # ===========================================================================
   # TORRENT CLIENT - qBittorrent
@@ -105,6 +108,8 @@ services:
       - ${BASE_PATH}/config/qbittorrent:/config
       - ${BASE_PATH}/downloads/torrents:/downloads
     restart: unless-stopped
+    security_opt:
+      - "label=disable"
 
   # ===========================================================================
   # MUSIC COLLECTION MANAGER - Lidarr
@@ -126,7 +131,8 @@ services:
       - ${BASE_PATH}/music:/music
       - ${BASE_PATH}/downloads:/downloads
     restart: unless-stopped
-
+    security_opt:
+      - "label=disable"
   # ===========================================================================
   # SOULSEEK CLIENT - slskd
   # ===========================================================================
@@ -154,7 +160,8 @@ services:
       - ${BASE_PATH}/downloads/soulseek:/downloads
       - ${BASE_PATH}/music:/music
     restart: unless-stopped
-
+    security_opt:
+      - "label=disable"
   # ===========================================================================
   # LIDARR + SOULSEEK INTEGRATION - soularr
   # ===========================================================================
